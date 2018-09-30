@@ -3,6 +3,7 @@ package edu.jsu.mcis;
 import java.io.*;
 import java.util.*;
 import com.opencsv.*;
+import static javafx.scene.input.KeyCode.T;
 import org.json.simple.*;
 import org.json.simple.parser.*;
 
@@ -67,8 +68,37 @@ public class Converter {
             List<String[]> full = reader.readAll();
             Iterator<String[]> iterator = full.iterator();
             
-            // INSERT YOUR CODE HERE
             
+    //My Code
+            
+            //Create Json Objects
+            JSONArray rowArray = new JSONArray();
+            JSONArray colArray = new JSONArray();
+            JSONArray dataArray = new JSONArray();
+            JSONObject json = new JSONObject();
+            
+            //Set col headers as first line in the array
+            for(String header : iterator.next()) colArray.add(header);
+            
+            //Set the data and row headers
+            while (iterator.hasNext()){
+                String[] line = iterator.next();
+               List<Integer> tmpDataLine = new ArrayList<Integer>();
+                for(String data : line){
+                    //Add data to proper array
+                    if(data.equals(line[0])) rowArray.add(data);
+                    else tmpDataLine.add((Integer.parseInt(data)));
+                }
+                dataArray.add(tmpDataLine);
+            }
+            
+            json.put("rowHeaders",rowArray);
+            json.put("colHeaders", colArray);
+            json.put("data",dataArray);
+            
+            results = JSONValue.toJSONString(json);
+                                  
+    //End My Code
         }        
         catch(Exception e) { return e.toString(); }
         
@@ -81,12 +111,67 @@ public class Converter {
         String results = "";
         
         try {
-
             StringWriter writer = new StringWriter();
             CSVWriter csvWriter = new CSVWriter(writer, ',', '"', '\n');
             
-            // INSERT YOUR CODE HERE
+    //My Code
+        
+            //Create Parser
+            JSONParser p = new JSONParser();
+            //Object to parse from
+            JSONObject json = (JSONObject) p.parse(jsonString);
             
+            //Create String JSONArrays
+            JSONArray colJSON = (JSONArray) json.get("colHeaders");
+            JSONArray rowJSON = (JSONArray) json.get("rowHeaders");
+            JSONArray dataJSON = (JSONArray) json.get("data");
+            
+            //Create String Arrays
+            String[] colArray = new String[colJSON.size()];
+            String[] rowArray = new String[rowJSON.size()];
+            String[] dataArray = new String[dataJSON.size()];
+            
+            //Set index int
+            int index;
+            int count;
+            
+            //Populate CSV First Row
+            index = 0;
+            for(Object col : colJSON){
+                colArray[index++] = (String) col;
+            }
+            
+            //Write CSV First Line
+            csvWriter.writeNext(colArray);
+            
+            
+            //Populate CSV Main data
+            index = 0;
+            
+            //Fill DataArray and HeadersArray
+            for(int i = 0; i < rowJSON.size(); i++){
+                dataArray[i] = dataJSON.get(i).toString();
+                rowArray[i] = rowJSON.get(i).toString();
+            }
+            
+            //Create CSV Array Objects
+            for(String data : dataArray){
+                JSONArray dataParseLine = (JSONArray)p.parse(data);
+                String[] tmpLine = new String[dataParseLine.size()+1];
+                
+                tmpLine[0] = rowArray[index++];
+                for(int i = 1; i<dataParseLine.size()+1; i++){
+                    tmpLine[i] = dataParseLine.get(i-1).toString();
+                }
+                csvWriter.writeNext(tmpLine);
+            }
+            
+            //Write to CSV
+            results = writer.toString();
+            
+    
+    //End My Code
+           
         }
         
         catch(Exception e) { return e.toString(); }
@@ -94,5 +179,7 @@ public class Converter {
         return results.trim();
         
     }
+    
+     
 
 }
